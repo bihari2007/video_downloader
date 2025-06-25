@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Downloader by Rawani boy</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #111;
+            color: #fff;
+            text-align: center;
+            padding-top: 50px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .message {
+            margin-top: 20px;
+            color: #ff0;
+        }
+        .download-link {
+            margin-top: 10px;
+        }
+        a {
+            color: #00f;
+        }
+    </style>
+</head>
+<body>
+    <h1>📥 YouTube & Instagram Video Downloader</h1>
+    <form method="POST">
+        <input type="text" name="url" placeholder="Paste YouTube or Instagram video URL here" required>
+        <button type="submit">Download</button>
+    </form>
+
+    {% if message %}
+        <div class="message">{{ message }}</div>
+    {% endif %}
+    
+    {% if video_url %}
+        <div class="download-link">
+            <a href="{{ video_url }}" download>Click here to download</a>
+        </div>
+    {% endif %}
+</body>
+</html>
