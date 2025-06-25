@@ -1,12 +1,13 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, flash
-import os
+from flask import Flask, render_template, request, send_file, redirect, flash
 from pytube import YouTube
+import os
+import uuid
 import instaloader
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Error messages ke liye
+app.secret_key = 'anish_youtube_insta_key'  # Replaceable but required
 
-DOWNLOAD_FOLDER = os.path.join('static', 'downloads')
+DOWNLOAD_FOLDER = "static/downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
@@ -14,35 +15,42 @@ def index():
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
-def download_video():
-    url = request.form['url']
+def download():
+    url = request.form.get("url")
+    if not url:
+        flash("Please enter a URL.")
+        return redirect('/')
 
     try:
-        if 'youtube.com' in url or 'youtu.be' in url:
+        filename = f"{uuid.uuid4()}.mp4"
+        filepath = os.path.join(DOWNLOAD_FOLDER, filename)
+
+        if "youtube.com" in url or "youtu.be" in url:
             yt = YouTube(url)
             stream = yt.streams.get_highest_resolution()
-            output_path = stream.download(output_path=DOWNLOAD_FOLDER)
-            filename = os.path.basename(output_path)
-            return redirect(f'/download_file/{filename}')
+            stream.download(output_path=DOWNLOAD_FOLDER, filename=filename)
+            return send_file(filepath, as_attachment=True)
 
-        elif 'instagram.com' in url:
-            loader = instaloader.Instaloader(dirname_pattern=DOWNLOAD_FOLDER)
-            loader.download_post(instaloader.Post.from_shortcode(loader.context, url.split("/")[-2]), target="")
-            flash("Instagram download done. Please check the server folder manually.")
+        elif "instagram.com" in url:
+            shortcode = url.strip("/").split("/")[-1]
+            loader = instaloader.Instaloader(dirname_pattern=DOWNLOAD_FOLDER, save_metadata=False)
+            loader.download_post(instaloader.Post.from_shortcode(loader.context, shortcode), target="post")
+            
+            # Get downloaded file (first .mp4 found)
+            for file in os.listdir(DOWNLOAD_FOLDER):
+                if file.endswith(".mp4"):
+                    return send_file(os.path.join(DOWNLOAD_FOLDER, file), as_attachment=True)
+
+            flash("Instagram video not found or unsupported.")
             return redirect('/')
 
         else:
-            flash("❌ Unsupported link. Please enter a valid YouTube or Instagram URL.")
+            flash("Only YouTube or Instagram URLs are supported.")
             return redirect('/')
 
     except Exception as e:
-        print(e)
-        flash(f"⚠️ Error: {str(e)}")
+        flash(f"Error: {str(e)}")
         return redirect('/')
 
-@app.route('/download_file/<filename>')
-def download_file(filename):
-    return send_from_directory(DOWNLOAD_FOLDER, filename, as_attachment=True)
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    app.run(debug=True)
